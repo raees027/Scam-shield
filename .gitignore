@@ -1,1 +1,11 @@
+# Secret files - NEVER commit these
 keys.txt
+.env
+*.env
+
+# Dependencies
+node_modules/
+
+# System files
+.DS_Store
+Thumbs.db
