@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
   ScrollView, StyleSheet, ActivityIndicator, Alert,
@@ -6,7 +5,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/colors';
-import { scanEntry } from '../../api/scan';
+import { useState, useEffect } from 'react';
+import ReportCard from '@/components/ReportCard';
+import { scanEntry, getRecentReports } from '../../api/scan';
 
 const CHIPS = [
   { label: 'UPI ID', type: 'upi', placeholder: 'e.g. paytm-support@ybl' },
@@ -19,6 +20,13 @@ export default function HomeScreen() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
+  const [reports, setReports] = useState<any[]>([]);
+
+useEffect(() => {
+  getRecentReports()
+    .then(setReports)
+    .catch(() => setReports([]));
+}, []); 
 
   async function handleScan() {
     if (!input.trim()) return;
@@ -101,6 +109,21 @@ export default function HomeScreen() {
           </View>
         )}
 
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Recent reports</Text>
+        </View>
+
+        <View style={{ paddingHorizontal: 16 }}>
+          {reports.length === 0 && (
+            <Text style={{ color: Colors.textTertiary, fontSize: 12 }}>
+              No reports yet — be the first to report a scam!
+            </Text>
+          )}
+          {reports.map((item, i) => (
+            <ReportCard key={i} item={item} />
+          ))}
+        </View>
+
         <View style={{ height: 40 }} />
       </ScrollView>
     </SafeAreaView>
@@ -130,5 +153,6 @@ const styles = StyleSheet.create({
   badgeText: { color: '#fff', fontSize: 11, fontWeight: '600' },
   scoreText: { fontSize: 13, fontWeight: '600' },
   resultValue: { fontSize: 14, fontWeight: '600', marginBottom: 4 },
-  resultReason: { fontSize: 12, opacity: 0.85 },
+  resultReason: { fontSize: 12, opacity: 0.85 },sectionHeader: { paddingHorizontal: 16, marginBottom: 10, marginTop: 4 },
+  sectionTitle: { fontSize: 15, fontWeight: '600', color: Colors.textPrimary },
 });

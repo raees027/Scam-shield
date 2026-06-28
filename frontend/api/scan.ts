@@ -6,3 +6,8 @@ export async function scanEntry(value: string, type: string) {
   const res = await axios.post(`${API_URL}/api/scan`, { value, type });
   return res.data;
 }
+
+export async function getRecentReports() {
+  const res = await axios.get(`${API_URL}/api/reports/recent`);
+  return res.data;
+}
