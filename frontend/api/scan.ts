@@ -11,3 +11,7 @@ export async function getRecentReports() {
   const res = await axios.get(`${API_URL}/api/reports/recent`);
   return res.data;
 }
+export async function submitReport(value: string, type: string, description: string) {
+  const res = await axios.post(`${API_URL}/api/report`, { value, type, description });
+  return res.data;
+}

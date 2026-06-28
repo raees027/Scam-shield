@@ -1,112 +1,118 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import { useState } from 'react';
+import {
+  View, Text, TextInput, TouchableOpacity,
+  ScrollView, StyleSheet, Alert, ActivityIndicator,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Colors } from '../../constants/colors';
+import { submitReport } from '../../api/scan';
 
-import { Collapsible } from '@/components/ui/collapsible';
-import { ExternalLink } from '@/components/external-link';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Fonts } from '@/constants/theme';
+const TYPES = [
+  { label: 'UPI ID', value: 'upi' },
+  { label: 'Phone number', value: 'phone' },
+  { label: 'Payment link / URL', value: 'url' },
+];
 
-export default function TabTwoScreen() {
+export default function ReportScreen() {
+  const [type, setType] = useState('upi');
+  const [value, setValue] = useState('');
+  const [description, setDescription] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit() {
+    if (!value.trim()) {
+      Alert.alert('Missing info', 'Please enter the UPI ID, phone, or link.');
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await submitReport(value.trim(), type, description.trim());
+      Alert.alert(
+        'Thank you! 🙏',
+        `Report submitted. This has now been reported ${res.totalReports} time(s).`
+      );
+      setValue('');
+      setDescription('');
+    } catch (err) {
+      Alert.alert('Error', 'Could not submit report. Try again.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
-      headerImage={
-        <IconSymbol
-          size={310}
-          color="#808080"
-          name="chevron.left.forwardslash.chevron.right"
-          style={styles.headerImage}
+    <SafeAreaView style={styles.safe}>
+      <ScrollView style={styles.body} contentContainerStyle={{ padding: 16 }}>
+        <Text style={styles.title}>Report a scam</Text>
+        <Text style={styles.subtitle}>Help protect others in the community</Text>
+
+        <Text style={styles.label}>What are you reporting?</Text>
+        <View style={styles.typeRow}>
+          {TYPES.map((t) => (
+            <TouchableOpacity
+              key={t.value}
+              style={[styles.typeChip, type === t.value && styles.typeChipActive]}
+              onPress={() => setType(t.value)}
+            >
+              <Text style={[styles.typeChipText, type === t.value && styles.typeChipTextActive]}>
+                {t.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <Text style={styles.label}>UPI ID / phone / link</Text>
+        <TextInput
+          style={styles.input}
+          value={value}
+          onChangeText={setValue}
+          placeholder="e.g. refund-help@ybl"
+          placeholderTextColor={Colors.textTertiary}
+          autoCapitalize="none"
         />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText
-          type="title"
-          style={{
-            fontFamily: Fonts.rounded,
-          }}>
-          Explore
-        </ThemedText>
-      </ThemedView>
-      <ThemedText>This app includes example code to help you get started.</ThemedText>
-      <Collapsible title="File-based routing">
-        <ThemedText>
-          This app has two screens:{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/explore.tsx</ThemedText>
-        </ThemedText>
-        <ThemedText>
-          The layout file in <ThemedText type="defaultSemiBold">app/(tabs)/_layout.tsx</ThemedText>{' '}
-          sets up the tab navigator.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/router/introduction">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Android, iOS, and web support">
-        <ThemedText>
-          You can open this project on Android, iOS, and the web. To open the web version, press{' '}
-          <ThemedText type="defaultSemiBold">w</ThemedText> in the terminal running this project.
-        </ThemedText>
-      </Collapsible>
-      <Collapsible title="Images">
-        <ThemedText>
-          For static images, you can use the <ThemedText type="defaultSemiBold">@2x</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">@3x</ThemedText> suffixes to provide files for
-          different screen densities
-        </ThemedText>
-        <Image
-          source={require('@/assets/images/react-logo.png')}
-          style={{ width: 100, height: 100, alignSelf: 'center' }}
+
+        <Text style={styles.label}>Describe what happened (optional)</Text>
+        <TextInput
+          style={[styles.input, { height: 90, textAlignVertical: 'top' }]}
+          value={description}
+          onChangeText={setDescription}
+          placeholder="e.g. They called pretending to be customer support..."
+          placeholderTextColor={Colors.textTertiary}
+          multiline
         />
-        <ExternalLink href="https://reactnative.dev/docs/images">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Light and dark mode components">
-        <ThemedText>
-          This template has light and dark mode support. The{' '}
-          <ThemedText type="defaultSemiBold">useColorScheme()</ThemedText> hook lets you inspect
-          what the user&apos;s current color scheme is, and so you can adjust UI colors accordingly.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Animations">
-        <ThemedText>
-          This template includes an example of an animated component. The{' '}
-          <ThemedText type="defaultSemiBold">components/HelloWave.tsx</ThemedText> component uses
-          the powerful{' '}
-          <ThemedText type="defaultSemiBold" style={{ fontFamily: Fonts.mono }}>
-            react-native-reanimated
-          </ThemedText>{' '}
-          library to create a waving hand animation.
-        </ThemedText>
-        {Platform.select({
-          ios: (
-            <ThemedText>
-              The <ThemedText type="defaultSemiBold">components/ParallaxScrollView.tsx</ThemedText>{' '}
-              component provides a parallax effect for the header image.
-            </ThemedText>
-          ),
-        })}
-      </Collapsible>
-    </ParallaxScrollView>
+
+        <TouchableOpacity
+          style={[styles.submitBtn, loading && { opacity: 0.7 }]}
+          onPress={handleSubmit}
+          disabled={loading}
+        >
+          {loading
+            ? <ActivityIndicator color="#fff" />
+            : <Text style={styles.submitText}>Submit report</Text>
+          }
+        </TouchableOpacity>
+
+        <Text style={styles.footnote}>
+          Your report is anonymous and helps protect thousands of people
+        </Text>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  headerImage: {
-    color: '#808080',
-    bottom: -90,
-    left: -35,
-    position: 'absolute',
-  },
-  titleContainer: {
-    flexDirection: 'row',
-    gap: 8,
-  },
+  safe: { flex: 1, backgroundColor: Colors.bg },
+  body: { flex: 1 },
+  title: { fontSize: 20, fontWeight: '700', color: Colors.textPrimary, marginBottom: 2 },
+  subtitle: { fontSize: 13, color: Colors.textTertiary, marginBottom: 20 },
+  label: { fontSize: 12, fontWeight: '500', color: Colors.textSecondary, marginBottom: 6, marginTop: 4 },
+  typeRow: { flexDirection: 'row', gap: 8, marginBottom: 16, flexWrap: 'wrap' },
+  typeChip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, borderWidth: 0.5, borderColor: Colors.border, backgroundColor: Colors.white },
+  typeChipActive: { backgroundColor: Colors.primaryLight, borderColor: Colors.primary },
+  typeChipText: { fontSize: 12, color: Colors.textSecondary },
+  typeChipTextActive: { color: Colors.primaryDark, fontWeight: '600' },
+  input: { backgroundColor: Colors.white, borderRadius: 10, borderWidth: 0.5, borderColor: Colors.border, paddingHorizontal: 12, paddingVertical: 10, fontSize: 13, color: Colors.textPrimary, marginBottom: 14 },
+  submitBtn: { backgroundColor: Colors.primary, borderRadius: 12, paddingVertical: 13, alignItems: 'center', marginTop: 8 },
+  submitText: { color: '#fff', fontSize: 14, fontWeight: '600' },
+  footnote: { fontSize: 11, color: Colors.textTertiary, textAlign: 'center', marginTop: 12 },
 });
