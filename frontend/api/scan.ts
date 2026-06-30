@@ -15,3 +15,7 @@ export async function submitReport(value: string, type: string, description: str
   const res = await axios.post(`${API_URL}/api/report`, { value, type, description });
   return res.data;
 }
+export async function getStats() {
+  const res = await axios.get(`${API_URL}/api/stats`);
+  return res.data;
+}
