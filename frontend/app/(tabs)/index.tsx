@@ -1,6 +1,6 @@
 import {
   View, Text, TextInput, TouchableOpacity,
-  ScrollView, StyleSheet, ActivityIndicator, Alert,
+  ScrollView, StyleSheet, ActivityIndicator, Alert, RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,22 +21,48 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [reports, setReports] = useState<any[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
 
-useEffect(() => {
-  getRecentReports()
-    .then(setReports)
-    .catch(() => setReports([]));
-}, []); 
+  useEffect(() => {
+    getRecentReports()
+      .then(setReports)
+      .catch(() => setReports([]));
+  }, []);
+
+  async function onRefresh() {
+    setRefreshing(true);
+    try {
+      const data = await getRecentReports();
+      setReports(data);
+    } catch {}
+    setRefreshing(false);
+  }
 
   async function handleScan() {
-    if (!input.trim()) return;
+    const trimmed = input.trim();
+    if (!trimmed) return;
+
+    const type = CHIPS[activeChip].type;
+
+    if (type === 'upi' && !trimmed.includes('@')) {
+      Alert.alert('Invalid format', 'UPI IDs must contain "@" — e.g. name@bank');
+      return;
+    }
+    if (type === 'phone' && !/^\d{10}$/.test(trimmed.replace(/\D/g, ''))) {
+      Alert.alert('Invalid format', 'Phone number must be 10 digits');
+      return;
+    }
+
     setLoading(true);
     setResult(null);
     try {
-      const data = await scanEntry(input.trim(), CHIPS[activeChip].type);
+      const data = await scanEntry(trimmed, type);
       setResult(data);
     } catch (err) {
-      Alert.alert('Error', 'Could not reach server. Check your connection.');
+      Alert.alert(
+        'Connection issue',
+        'Server might be waking up (free tier). Please try again in 20 seconds.'
+      );
     } finally {
       setLoading(false);
     }
@@ -54,7 +80,11 @@ useEffect(() => {
         <Text style={styles.logoSub}>Protect yourself from UPI fraud</Text>
       </View>
 
-      <ScrollView style={styles.body} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.body}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      >
         <View style={styles.searchCard}>
           <Text style={styles.searchLabel}>Check before you pay</Text>
 
@@ -96,7 +126,15 @@ useEffect(() => {
           </View>
         </View>
 
-        {result && resultColor && (
+        {loading && (
+          <View style={[styles.resultCard, { backgroundColor: '#F0F0F0', borderColor: '#E0E0E0' }]}>
+            <View style={{ height: 14, backgroundColor: '#DDD', borderRadius: 6, width: '60%', marginBottom: 8 }} />
+            <View style={{ height: 12, backgroundColor: '#DDD', borderRadius: 6, width: '80%', marginBottom: 8 }} />
+            <View style={{ height: 12, backgroundColor: '#DDD', borderRadius: 6, width: '40%' }} />
+          </View>
+        )}
+
+        {!loading && result && resultColor && (
           <View style={[styles.resultCard, { backgroundColor: resultColor.bg, borderColor: resultColor.border }]}>
             <View style={styles.resultTop}>
               <View style={[styles.badge, { backgroundColor: resultColor.badge }]}>
@@ -153,6 +191,7 @@ const styles = StyleSheet.create({
   badgeText: { color: '#fff', fontSize: 11, fontWeight: '600' },
   scoreText: { fontSize: 13, fontWeight: '600' },
   resultValue: { fontSize: 14, fontWeight: '600', marginBottom: 4 },
-  resultReason: { fontSize: 12, opacity: 0.85 },sectionHeader: { paddingHorizontal: 16, marginBottom: 10, marginTop: 4 },
+  resultReason: { fontSize: 12, opacity: 0.85 },
+  sectionHeader: { paddingHorizontal: 16, marginBottom: 10, marginTop: 4 },
   sectionTitle: { fontSize: 15, fontWeight: '600', color: Colors.textPrimary },
 });
